@@ -8,7 +8,7 @@ on:
       - '**/*.txt'
   workflow_dispatch:
 
-  jobs:
+jobs:
   build:
     name: Build
     uses: ./github/workflows/build.yml
