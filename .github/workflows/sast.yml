@@ -37,7 +37,7 @@ jobs:
         shell: bash
         
       - name: Code Scanning - JavaScript
-        if: steps.detect-language.outputs.DetectedLanguage == 'javascript'
+        if: DetectedLanguage == 'javascript'
         run: |
           # Perform JavaScript code scanning (replace with your code scanning command).
           echo "Performing JavaScript code scanning..."
@@ -46,7 +46,7 @@ jobs:
         shell: bash
 
       - name: Code Scanning - C#
-        if: steps.detect-language.outputs.DetectedLanguage == 'csharp'
+        if: DetectedLanguage == 'csharp'
         run: |
           # Perform C# code scanning (replace with your code scanning command).
           echo "Performing C# code scanning..."
@@ -55,7 +55,7 @@ jobs:
         shell: bash
 
       - name: Code Scanning - Dart
-        if: steps.detect-language.outputs.DetectedLanguage == 'dart'
+        if: DetectedLanguage == 'dart'
         run: |
           # Perform Dart code scanning (replace with your code scanning command).
           echo "Performing Dart code scanning..."
@@ -64,7 +64,7 @@ jobs:
         shell: bash
 
       - name: Code Scanning - Java
-        if: steps.detect-language.outputs.DetectedLanguage == 'java'
+        if: DetectedLanguage == 'java'
         run: |
           # Perform Java code scanning with semgrep.
           echo "Performing Java code scanning with semgrep..."
