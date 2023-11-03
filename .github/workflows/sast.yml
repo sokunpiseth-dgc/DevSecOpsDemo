@@ -1,9 +1,8 @@
 name: Code Scanning and Image Scanning
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+  workflow_call:
 
 jobs:
   scan-code-and-image:
