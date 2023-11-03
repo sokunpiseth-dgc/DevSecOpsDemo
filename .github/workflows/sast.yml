@@ -27,6 +27,8 @@ jobs:
           echo "Performing code scanning for Python..."
           # Example: Run semgrep for Python
           semgrep --config=my_rules.yaml --json -o semgrep_results.json .
+          # Create an empty code_scan_results.json file to satisfy GitHub Actions requirements
+          touch code_scan_results.json
         shell: bash
 
       - name: CodeQL Analysis
@@ -36,6 +38,8 @@ jobs:
           echo "Performing CodeQL analysis for Java..."
           # Example: Run CodeQL for Java
           codeql analyze --sarif=codeql_results.sarif
+          # Create an empty code_scan_results.json file to satisfy GitHub Actions requirements
+          touch code_scan_results.json
         shell: bash
 
       - name: Docker Image Scanning
@@ -45,23 +49,17 @@ jobs:
           echo "Performing Docker image scanning for Dockerfile..."
           # Example: Run trivy for Docker image scanning
           trivy --input your-image.tar.gz --format json -o image_scan_results.json
+          # Create an empty code_scan_results.json file to satisfy GitHub Actions requirements
+          touch code_scan_results.json
         shell: bash
 
       - name: Upload Reports
         if: steps.detect-language.outputs.DetectedLanguage == 'python' || steps.detect-language.outputs.DetectedLanguage == 'java' || steps.detect-language.outputs.DetectedLanguage == 'dockerfile'
         run: |
-          # Upload the generated reports to GitHub as artifacts.
-          if [[ -f "semgrep_results.json" ]]; then
-            mv semgrep_results.json code_scan_results.json
-          fi
+          # Rename the generated reports
+          mv semgrep_results.json code_scan_results.json
+          mv image_scan_results.json docker_image_scan_results.json
 
-          if [[ -f "image_scan_results.json" ]]; then
-            mv image_scan_results.json docker_image_scan_results.json
-          fi
-
-          if [[ -f "codeql_results.sarif" ]]; then
-            mv codeql_results.sarif codeql_analysis_report.sarif
-          fi
         shell: bash
 
       - name: Archive Reports
@@ -71,4 +69,4 @@ jobs:
           path: |
             code_scan_results.json
             docker_image_scan_results.json
-            codeql_analysis_report.sarif
+            codeql_results.sarif
