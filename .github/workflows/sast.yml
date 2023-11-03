@@ -38,7 +38,7 @@ jobs:
           fi
           
           echo "DetectedLanguage=$detected_language" >> $GITHUB_ENV
-          echo "DetectedLanguage: ${{ detected_language }}"
+          echo "DetectedLanguage: $detected_language"
         shell: bash
 
       - name: Code Scanning - JavaScript
