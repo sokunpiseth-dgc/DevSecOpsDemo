@@ -1,11 +1,11 @@
-name: Code Scanning and Image Scanning
+name: Code Scanning
 
 on:
   workflow_dispatch:
   workflow_call:
 
 jobs:
-  scan-code-and-image:
+  scan-code:
     runs-on: ubuntu-latest
 
     steps:
@@ -48,14 +48,20 @@ jobs:
         shell: bash
 
       - name: Upload Reports
+        if: steps.detect-language.outputs.DetectedLanguage == 'python' || steps.detect-language.outputs.DetectedLanguage == 'java' || steps.detect-language.outputs.DetectedLanguage == 'dockerfile'
         run: |
           # Upload the generated reports to GitHub as artifacts.
-          echo "Uploading code scanning report..."
-          mv semgrep_results.json code_scan_results.json
-          echo "Uploading Docker image scanning report..."
-          mv image_scan_results.json docker_image_scan_results.json
-          echo "Uploading CodeQL analysis report..."
-          mv codeql_results.sarif codeql_analysis_report.sarif
+          if [[ -f "semgrep_results.json" ]]; then
+            mv semgrep_results.json code_scan_results.json
+          fi
+
+          if [[ -f "image_scan_results.json" ]]; then
+            mv image_scan_results.json docker_image_scan_results.json
+          fi
+
+          if [[ -f "codeql_results.sarif" ]]; then
+            mv codeql_results.sarif codeql_analysis_report.sarif
+          fi
         shell: bash
 
       - name: Archive Reports
