@@ -1,120 +1,77 @@
-name: SAST
+name: Code Scanning
 
 on:
   workflow_dispatch:
   workflow_call:
 
 jobs:
-  SAST:
-    name: Build and SAST
+  scan-code:
     runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ ${{ github.event.repository.language }} ]
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
-      - name: Initialize CodeQL
-        if: ${{ matrix.language == 'Java' }}
-        uses: github/codeql-action/init@v2
-        with:
-          languages: java
-
-      - name: Setup Node.js
-        if: ${{ matrix.language == 'JavaScript' }}
-        uses: actions/setup-node@v2
-        with:
-          node-version: 14
-
-      - name: Setup .NET
-        if: ${{ matrix.language == 'C#' }}
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: 3.1.x
-          
-      - name: Set up JDK 11
-        if: ${{ matrix.language == 'Java' }}
-        uses: actions/setup-java@v3
-        with:
-          java-version: '11'
-          distribution: 'temurin'
-          cache: maven
-
-      - name: Build with Maven
-        if: ${{ matrix.language == 'Java' }}
-        run: mvn clean package -B -Dmaven.test.skip
-
-      - name: Cache build
-        if: ${{ matrix.language == 'Java' }}
-        id: cache-build
-        uses: actions/cache@v3
-        with:
-          path: target
-          key: ${{ runner.os }}-target
-
-      - name: Cache m2
-        if: ${{ matrix.language == 'Java' }}
-        id: cache-deps
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2/**/*.jar
-          key: ${{ runner.os }}-m2
-
-      - name: Upload artifact
-        if: ${{ matrix.language == 'Java' }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: target
-          path: ${{github.workspace}}/target
-
-      - name: Perform Static Analysis (CodeQL, Semgrep, or other tools)
-        if: ${{ matrix.language == 'Java' || matrix.language == 'JavaScript' || matrix.language == 'C#' }}
+      - name: Detect Language
+        id: detect-language
         run: |
-          # Perform SAST based on the language
-          if [ "${{ matrix.language }}" == "Java" ]; then
-            # Run Java-specific SAST tools
-            # Add CodeQL and SpotBugs/Semgrep commands here
-          elif [ "${{ matrix.language }}" == "JavaScript" ]; then
-            # Run JavaScript-specific SAST tools
-            # Add CodeQL and other JavaScript SAST commands here
-          elif [ "${{ matrix.language }}" == "C#" ]; then
-            # Run C#-specific SAST tools
-            # Add CodeQL and other C# SAST commands here
+          # Use a script to detect the programming language and store it in an environment variable.
+          # Replace this with your language detection logic.
+          detected_language="unknown"
+          
+          # Detect language based on repository contents, file extensions, or other criteria.
+          # Example: Detect Next.js, React.js, and Angular (JavaScript frameworks)
+          if [ -f "package.json" ] && [ -f "pages/index.js" ]; then
+            detected_language="javascript"
+          elif [ -f "angular.json" ] && [ -d "src/app" ]; then
+            detected_language="javascript (Angular)"
           fi
           
-      - name: Upload SAST results
-        if: ${{ matrix.language == 'Java' || matrix.language == 'JavaScript' || matrix.language == 'C#' }}
-        run: |
-          # Upload SARIF reports for SAST results
-          if [ "${{ matrix.language }}" == "Java" ]; then
-            # Upload Java-specific SAST reports
-            # Example: Upload CodeQL and SpotBugs SARIF reports
-            echo "Uploading CodeQL SARIF report..."
-            upload-sarif ./codeql-results/codeqlsarif.sarif
-            echo "Uploading SpotBugs SARIF report..."
-            upload-sarif ./spotbugs-results/spotbugs.sarif
-          elif [ "${{ matrix.language }}" == "JavaScript" ]; then
-            # Upload JavaScript-specific SAST reports
-            # Example: Upload CodeQL and other JavaScript SAST reports
-            echo "Uploading CodeQL SARIF report..."
-            upload-sarif ./codeql-results/codeqlsarif.sarif
-            echo "Uploading JavaScript SAST report..."
-            upload-sarif ./javascript-sast-results/sast.sarif
-          elif [ "${{ matrix.language }}" == "C#" ]; then
-            # Upload C#-specific SAST reports
-            # Example: Upload CodeQL and other C# SAST reports
-            echo "Uploading CodeQL SARIF report..."
-            upload-sarif ./codeql-results/codeqlsarif.sarif
-            echo "Uploading C# SAST report..."
-            upload-sarif ./csharp-sast-results/sast.sarif
+          # Example: Detect C# (you can add more specific criteria if needed)
+          if [ -f "Program.cs" ]; then
+            detected_language="csharp"
           fi
+          
+          # Example: Detect Dart (you can add more specific criteria if needed)
+          if [ -f "pubspec.yaml" ]; then
+            detected_language="dart"
+          fi
+          
+          echo "DetectedLanguage=$detected_language" >> $GITHUB_ENV
+        shell: bash
 
-  # Add more SAST jobs for other languages as needed.
+      - name: Code Scanning - JavaScript
+        if: steps.detect-language.outputs.DetectedLanguage == 'javascript'
+        run: |
+          # Perform JavaScript code scanning (replace with your code scanning command).
+          echo "Performing JavaScript code scanning..."
+          # Example: Run ESLint or other JavaScript static analysis tool
+          eslint .
+        shell: bash
+
+      - name: Code Scanning - C#
+        if: steps.detect-language.outputs.DetectedLanguage == 'csharp'
+        run: |
+          # Perform C# code scanning (replace with your code scanning command).
+          echo "Performing C# code scanning..."
+          # Example: Run Roslyn Analyzers or other C# static analysis tool
+          dotnet analyze
+        shell: bash
+
+      - name: Code Scanning - Dart
+        if: steps.detect-language.outputs.DetectedLanguage == 'dart'
+        run: |
+          # Perform Dart code scanning (replace with your code scanning command).
+          echo "Performing Dart code scanning..."
+          # Example: Run Dart static analysis tool
+          dart analyze
+        shell: bash
+
+      - name: Code Scanning - Java
+        if: steps.detect-language.outputs.DetectedLanguage == 'java'
+        run: |
+          # Perform Java code scanning (replace with your code scanning command).
+          echo "Performing Java code scanning..."
+          # Example: Run FindBugs or other Java static analysis tool
+          findbugs .
+        shell: bash
