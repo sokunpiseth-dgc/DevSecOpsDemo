@@ -18,29 +18,23 @@ jobs:
           # Use a script to detect the programming language and store it in an environment variable.
           # Replace this with your language detection logic.
           detected_language="unknown"
-          
-          # Detect language based on repository contents, file extensions, or other criteria.
-          # Example: Detect Next.js, React.js, and Angular (JavaScript frameworks)
+      
           if [ -f "package.json" ] && [ -f "pages/index.js" ]; then
-            detected_language="javascript"
+            detected_language="javascript (Next.js, React.js)"
           elif [ -f "angular.json" ] && [ -d "src/app" ]; then
             detected_language="javascript (Angular)"
-          fi
-          
-          # Example: Detect C# (you can add more specific criteria if needed)
-          if [ -f "Program.cs" ]; then
+          elif [ -f "Program.cs" ]; then
             detected_language="csharp"
-          fi
-          
-          # Example: Detect Dart (you can add more specific criteria if needed)
-          if [ -f "pubspec.yaml" ]; then
+          elif [ -f "pubspec.yaml" ]; then
             detected_language="dart"
+          elif [ -f "pom.xml" ]; then
+            detected_language="java"
           fi
-          
+      
           echo "DetectedLanguage=$detected_language" >> $GITHUB_ENV
           echo "DetectedLanguage: $detected_language"
         shell: bash
-
+        
       - name: Code Scanning - JavaScript
         if: steps.detect-language.outputs.DetectedLanguage == 'javascript'
         run: |
