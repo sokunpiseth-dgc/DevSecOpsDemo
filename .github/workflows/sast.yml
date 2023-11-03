@@ -1,4 +1,4 @@
-name: Code Scanning
+name: Code Scanning and Static Analysis
 
 on:
   workflow_dispatch:
@@ -12,61 +12,49 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: JavaScript Frameworks Static Analysis
-        if: contains(github.event.head_commit.modified, 'js/') || contains(github.event.head_commit.modified, 'jsx/')
+      - name: JavaScript Analysis (Next.js, Angular, React.js)
+        if: ${{ contains(github.event.head_commit.added, 'package.json') || contains(github.event.head_commit.modified, 'package.json') }}
         run: |
-          # Perform static analysis for JavaScript frameworks (Next.js, Angular, React.js)
-          echo "Performing static analysis for JavaScript frameworks..."
-          # Replace the command with the appropriate static analysis tool for JavaScript projects
-          # Example: Run semgrep for JavaScript
-          semgrep --config=my_rules.yaml --json -o js_static_analysis_results.json .
+          # Perform static analysis for JavaScript using semgrep
+          echo "Performing JavaScript analysis..."
+          semgrep --config=javascript_rules.yaml --json -o javascript_results.json .
         shell: bash
 
-      - name: C# Static Analysis
-        if: contains(github.event.head_commit.modified, 'cs/')
+      - name: C# Analysis
+        if: ${{ contains(github.event.head_commit.added, '*.cs') || contains(github.event.head_commit.modified, '*.cs') }}
         run: |
-          # Perform static analysis for C#
-          echo "Performing static analysis for C#..."
-          # Replace the command with the appropriate static analysis tool for C# projects
-          # Example: Run semgrep for C#
-          semgrep --config=my_rules.yaml --json -o cs_static_analysis_results.json .
+          # Perform static analysis for C# using your preferred tool
+          echo "Performing C# analysis..."
+          # Replace with your C# analysis command
         shell: bash
 
-      - name: Java Static Analysis
-        if: contains(github.event.head_commit.modified, 'java/') || contains(github.event.head_commit.modified, 'src/')
+      - name: Dart Analysis
+        if: ${{ contains(github.event.head_commit.added, '*.dart') || contains(github.event.head_commit.modified, '*.dart') }}
         run: |
-          # Perform static analysis for Java
-          echo "Performing static analysis for Java..."
-          # Replace the command with the appropriate static analysis tool for Java projects
-          # Example: Run FindBugs or PMD for Java
-          # Example: Run Checkstyle for Java
-          # Example: Run CodeQL for Java
-          # Replace with the actual command for Java static analysis
+          # Perform static analysis for Dart using your preferred tool
+          echo "Performing Dart analysis..."
+          # Replace with your Dart analysis command
         shell: bash
 
-      - name: Dart Static Analysis
-        if: contains(github.event.head_commit.modified, 'dart/')
+      - name: Java Analysis
+        if: ${{ contains(github.event.head_commit.added, '*.java') || contains(github.event.head_commit.modified, '*.java') }}
         run: |
-          # Perform static analysis for Dart
-          echo "Performing static analysis for Dart..."
-          # Replace the command with the appropriate static analysis tool for Dart projects
-          # Example: Run dartanalyzer for Dart
-          dartanalyzer .
+          # Perform static analysis for Java using CodeQL
+          echo "Performing Java analysis..."
+          # Replace with your Java CodeQL analysis command
         shell: bash
 
       - name: Upload Reports
         run: |
-          # Rename and upload the generated reports
-          mv js_static_analysis_results.json javascript_static_analysis.json
-          mv cs_static_analysis_results.json csharp_static_analysis.json
-          # Upload the reports as artifacts
-          echo "Uploading analysis reports..."
+          # Rename the generated reports
+          mv javascript_results.json javascript_analysis_results.json
+          # You can similarly rename other reports here if needed
         shell: bash
 
       - name: Archive Reports
         uses: actions/upload-artifact@v2
         with:
-          name: code-scanning-reports
+          name: code-analysis-reports
           path: |
-            javascript_static_analysis.json
-            csharp_static_analysis.json
+            javascript_analysis_results.json
+            # Add other renamed reports here
