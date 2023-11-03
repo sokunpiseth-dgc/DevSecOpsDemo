@@ -12,54 +12,55 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: Detect Language
-        id: detect-language
+      - name: JavaScript Frameworks Static Analysis
+        if: contains(github.event.head_commit.modified, 'js/') || contains(github.event.head_commit.modified, 'jsx/')
         run: |
-          # Use a script to detect the programming language and store it in an environment variable.
-          # Replace this with your language detection logic.
-          echo "DetectedLanguage=python" >> $GITHUB_ENV
+          # Perform static analysis for JavaScript frameworks (Next.js, Angular, React.js)
+          echo "Performing static analysis for JavaScript frameworks..."
+          # Replace the command with the appropriate static analysis tool for JavaScript projects
+          # Example: Run semgrep for JavaScript
+          semgrep --config=my_rules.yaml --json -o js_static_analysis_results.json .
         shell: bash
 
-      - name: Code Scanning
-        if: steps.detect-language.outputs.DetectedLanguage == 'python'
+      - name: C# Static Analysis
+        if: contains(github.event.head_commit.modified, 'cs/')
         run: |
-          # Perform code scanning for Python (replace with your code scanning command).
-          echo "Performing code scanning for Python..."
-          # Example: Run semgrep for Python
-          semgrep --config=my_rules.yaml --json -o semgrep_results.json .
-          # Create an empty code_scan_results.json file to satisfy GitHub Actions requirements
-          touch code_scan_results.json
+          # Perform static analysis for C#
+          echo "Performing static analysis for C#..."
+          # Replace the command with the appropriate static analysis tool for C# projects
+          # Example: Run semgrep for C#
+          semgrep --config=my_rules.yaml --json -o cs_static_analysis_results.json .
         shell: bash
 
-      - name: CodeQL Analysis
-        if: steps.detect-language.outputs.DetectedLanguage == 'java'
+      - name: Java Static Analysis
+        if: contains(github.event.head_commit.modified, 'java/') || contains(github.event.head_commit.modified, 'src/')
         run: |
-          # Perform CodeQL analysis for Java (replace with your CodeQL analysis command).
-          echo "Performing CodeQL analysis for Java..."
+          # Perform static analysis for Java
+          echo "Performing static analysis for Java..."
+          # Replace the command with the appropriate static analysis tool for Java projects
+          # Example: Run FindBugs or PMD for Java
+          # Example: Run Checkstyle for Java
           # Example: Run CodeQL for Java
-          codeql analyze --sarif=codeql_results.sarif
-          # Create an empty code_scan_results.json file to satisfy GitHub Actions requirements
-          touch code_scan_results.json
+          # Replace with the actual command for Java static analysis
         shell: bash
 
-      - name: Docker Image Scanning
-        if: steps.detect-language.outputs.DetectedLanguage == 'dockerfile'
+      - name: Dart Static Analysis
+        if: contains(github.event.head_commit.modified, 'dart/')
         run: |
-          # Perform Docker image scanning for Dockerfile (replace with your image scanning command).
-          echo "Performing Docker image scanning for Dockerfile..."
-          # Example: Run trivy for Docker image scanning
-          trivy --input your-image.tar.gz --format json -o image_scan_results.json
-          # Create an empty code_scan_results.json file to satisfy GitHub Actions requirements
-          touch code_scan_results.json
+          # Perform static analysis for Dart
+          echo "Performing static analysis for Dart..."
+          # Replace the command with the appropriate static analysis tool for Dart projects
+          # Example: Run dartanalyzer for Dart
+          dartanalyzer .
         shell: bash
 
       - name: Upload Reports
-        if: steps.detect-language.outputs.DetectedLanguage == 'python' || steps.detect-language.outputs.DetectedLanguage == 'java' || steps.detect-language.outputs.DetectedLanguage == 'dockerfile'
         run: |
-          # Rename the generated reports
-          mv semgrep_results.json code_scan_results.json
-          mv image_scan_results.json docker_image_scan_results.json
-
+          # Rename and upload the generated reports
+          mv js_static_analysis_results.json javascript_static_analysis.json
+          mv cs_static_analysis_results.json csharp_static_analysis.json
+          # Upload the reports as artifacts
+          echo "Uploading analysis reports..."
         shell: bash
 
       - name: Archive Reports
@@ -67,6 +68,5 @@ jobs:
         with:
           name: code-scanning-reports
           path: |
-            code_scan_results.json
-            docker_image_scan_results.json
-            codeql_results.sarif
+            javascript_static_analysis.json
+            csharp_static_analysis.json
