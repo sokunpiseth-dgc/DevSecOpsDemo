@@ -33,17 +33,9 @@ jobs:
       
           echo "DetectedLanguage=$detected_language" >> $GITHUB_ENV
           echo "DetectedLanguage: $detected_language"
-          echo "Language: $steps.detect-language.outputs.DetectedLanguage"
         shell: bash
         
-      - name: Code Scanning - JavaScript
-        if: ${{ env.detected_language }} == 'javascript'
-        run: |
-          # Perform JavaScript code scanning (replace with your code scanning command).
-          echo "Performing JavaScript code scanning..."
-          # Example: Run ESLint or other JavaScript static analysis tool
-          eslint .
-        shell: bash
+
 
       - name: Code Scanning - C#
         if: ${{ env.detected_language }} == 'csharp'
@@ -75,4 +67,13 @@ jobs:
           
           # Create an empty code_scan_results.json file to satisfy GitHub Actions requirements.
           touch code_scan_results.json
+        shell: bash
+
+      - name: Code Scanning - JavaScript
+        if: ${{ env.detected_language }} == 'javascript'
+        run: |
+          # Perform JavaScript code scanning (replace with your code scanning command).
+          echo "Performing JavaScript code scanning..."
+          # Example: Run ESLint or other JavaScript static analysis tool
+          eslint .
         shell: bash
