@@ -5,60 +5,59 @@ stages:
   - dockerize
   - scan
 
-# Define the CI/CD pipeline jobs
 jobs:
-  - job: Build
-    displayName: 'Build stage'
+  - job: Build_Job
     pool:
       vmImage: 'ubuntu-latest'
+    displayName: 'Build the code'
     steps:
       - script: echo 'Building the Java code...'
-        displayName: 'Building the code'
+        displayName: 'Building'
 
   - job: Software_Component_Analysis
-    displayName: 'Software Component Analysis'
     pool:
       vmImage: 'ubuntu-latest'
+    displayName: 'Software Component Analysis'
     steps:
       - script: echo 'Performing Software Component Analysis...'
         displayName: 'Software Component Analysis'
 
   - job: Static_Analysis
-    displayName: 'Static Analysis (SAST)'
     pool:
       vmImage: 'ubuntu-latest'
+    displayName: 'Static Analysis (SAST)'
     steps:
       - script: echo 'Running Static Analysis (SAST)...'
         displayName: 'Static Analysis (SAST)'
 
   - job: License_Compliance
-    displayName: 'License Compliance'
     pool:
       vmImage: 'ubuntu-latest'
+    displayName: 'License Compliance'
     steps:
       - script: echo 'Checking License Compliance...'
         displayName: 'License Compliance'
 
   - job: Build_Docker_Image
-    displayName: 'Build Docker Image'
     pool:
       vmImage: 'ubuntu-latest'
+    displayName: 'Build Docker Image'
     steps:
       - script: echo 'Building Docker image...'
         displayName: 'Building Docker Image'
 
   - job: Container_Image_Scan
-    displayName: 'Container Image Scan'
     pool:
       vmImage: 'ubuntu-latest'
+    displayName: 'Container Image Scan'
     steps:
       - script: echo 'Scanning Container Image for vulnerabilities...'
         displayName: 'Container Image Scan'
 
   - job: DAST_Scan
-    displayName: 'DAST Scan'
     pool:
       vmImage: 'ubuntu-latest'
+    displayName: 'DAST Scan'
     steps:
       - script: echo 'Running Dynamic Application Security Testing (DAST)...'
         displayName: 'DAST Scan'
