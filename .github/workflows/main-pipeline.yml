@@ -31,6 +31,27 @@ jobs:
       run: |
         # Perform Veracode scans here
         echo "Running Veracode scans"
+            # Assuming you have Veracode's CLI tool installed or available in the workflow environment.
+        # Replace 'veracode' with the actual command to execute Veracode scans using Veracode's CLI.
+    
+        # Perform Veracode Static Analysis (SAST)
+        veracode -vid $VERACODE_API_ID -vkey $VERACODE_API_KEY -f target/*.jar -action sca
+    
+        # Perform Veracode Static Analysis (SAST) separately, if needed
+        veracode -vid $VERACODE_API_ID -vkey $VERACODE_API_KEY -f target/*.jar -action static
+    
+        # Perform Veracode License Compliance check
+        veracode -vid $VERACODE_API_ID -vkey $VERACODE_API_KEY -f target/*.jar -action license
+    
+        # Perform Veracode Dynamic Analysis (DAST)
+        veracode -vid $VERACODE_API_ID -vkey $VERACODE_API_KEY -f target/*.jar -action dast -url $APP_URL
+    
+      # Optionally, you can include artifacts paths for any generated Veracode reports or results.
+      # Example:
+        artifacts:
+         paths:
+           - veracode-results/*.json
+
 
     - name: Build and push Docker image
       run: |
