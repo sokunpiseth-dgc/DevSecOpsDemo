@@ -1,75 +1,116 @@
-# File name: decsecop.yml
-# Description: A YAML file that supports the decsecop task for a Spring Boot application
+# File name: cicd.yml
+# Description: A YAML file that supports the CI/CD pipeline for a Java application
 # Version: 1.0
 
-# Define the variables that you need for your decsecop task
+# Define the name, variables, and trigger of the pipeline
+name: Java App CI/CD Pipeline
 variables:
-  - name: repository
-    value: https://github.com/example/spring-boot-app.git # The URL of the source code repository
-  - name: branch
-    value: main # The branch of the source code repository
-  - name: dockerRegistry
-    value: example # The name of the Docker registry
-  - name: dockerImageName
-    value: spring-boot-app # The name of the Docker image
-  - name: dockerId
-    value: example # The username of the Docker registry
-  - name: dockerPassword
-    value: $(dockerPassword) # The password of the Docker registry, stored as a secret variable
-  - name: sonarQubeServer
-    value: https://sonarqube.example.com # The URL of the SonarQube server
-  - name: sonarQubeToken
-    value: $(sonarQubeToken) # The token of the SonarQube server, stored as a secret variable
-  - name: webApp
-    value: spring-boot-app # The name of the web app on Azure
+  # Define the variables that you need for your pipeline, such as the repository URL, the Docker image name, the Snyk token, etc.
+trigger:
+  # Define the trigger that will start your pipeline, such as the branch or the tag of your repository
 
-# Define the stages that you want to run for your decsecop task
-jobs:
-  - job: Build_Job
-    displayName: Build job
-    pool:
-      vmImage: ubuntu-latest # The virtual machine image to run the job
-    steps:
-      - checkout: self # Check out the source code from the repository
-        persistCredentials: true # Persist the credentials for later use
-      - task: Gradle@2 # Build the Spring Boot application with Gradle
-        inputs:
-          workingDirectory: '' # The working directory to use
-          gradleWrapperFile: 'gradlew' # The Gradle wrapper file to use
-          gradleOptions: '-Xmx3072m' # The Gradle options to use
-          publishJUnitResults: false # Whether to publish the JUnit results
-          testResultsFiles: '**/TEST-*.xml' # The test results files to use
-          tasks: 'build' # The Gradle tasks to run
-        displayName: Build Spring Boot application
-      - task: Docker@2 # Build and push the Docker image
-        inputs:
-          containerRegistry: $(dockerRegistry) # The Docker registry to use
-          repository: $(dockerImageName) # The Docker repository to use
-          command: buildAndPush # The Docker command to run
-          Dockerfile: Dockerfile # The Dockerfile to use
-          tags: $(Build.BuildId) # The tag to use for the Docker image
-        env:
-          dockerId: $(dockerId) # The username of the Docker registry
-          dockerPassword: $(dockerPassword) # The password of the Docker registry
-        displayName: Build and push Docker image
-      - task: SonarQubePrepare@4 # Prepare the SonarQube analysis
-        inputs:
-          SonarQube: $(sonarQubeServer) # The SonarQube server to use
-          scannerMode: CLI # The scanner mode to use
-          configMode: manual # The configuration mode to use
-          cliProjectKey: spring-boot-app # The project key to use for SonarQube
-          cliProjectName: spring-boot-app # The project name to use for SonarQube
-          cliSources: . # The source code directory to use for SonarQube
-          extraProperties: | # The extra properties to use for SonarQube
-            sonar.java.binaries=build/classes
-            sonar.exclusions=**/test/**,**/resources/**
-        displayName: Prepare SonarQube analysis
-      - task: SonarQubeAnalyze@4 # Run the SonarQube analysis
-        displayName: Run SonarQube analysis
-      - task: SonarQubePublish@4 # Publish the SonarQube analysis results
-        inputs:
-          pollingTimeoutSec: '300' # The polling timeout in seconds
-        displayName: Publish SonarQube analysis results
-      - publish: $(Build.SourcesDirectory) # Publish the source code as an artifact
-        artifact: source # The name of the artifact
-        displayName: Publish source code
+# Define the stages of the pipeline
+stages:
+  - stage: Build
+    displayName: Build stage
+    jobs:
+      - job: Build_Job
+        displayName: Build job
+        pool:
+          vmImage: ubuntu-latest # The virtual machine image to run the job
+        steps:
+          - checkout: self # Check out the source code from the repository
+            persistCredentials: true # Persist the credentials for later use
+          - task: Maven@3 # Build the code with Maven
+            inputs:
+              mavenPomFile: 'pom.xml' # The Maven POM file to use
+              mavenOptions: '-Xmx3072m' # The Maven options to use
+              javaHomeOption: 'JDKVersion' # The Java home option to use
+              jdkVersionOption: '1.8' # The JDK version to use
+              jdkArchitectureOption: 'x64' # The JDK architecture to use
+              publishJUnitResults: true # Whether to publish the JUnit results
+              testResultsFiles: '**/surefire-reports/TEST-*.xml' # The test results files to use
+              goals: 'package' # The Maven goals to run
+            displayName: Build code
+          - task: Docker@2 # Build the Docker image
+            inputs:
+              containerRegistry: $(dockerRegistry) # The Docker registry to use
+              repository: $(dockerImageName) # The Docker repository to use
+              command: buildAndPush # The Docker command to run
+              Dockerfile: Dockerfile # The Dockerfile to use
+              tags: $(Build.BuildId) # The tag to use for the Docker image
+            displayName: Build Docker image
+          - publish: $(Build.SourcesDirectory) # Publish the source code as an artifact
+            artifact: source # The name of the artifact
+            displayName: Publish source code
+          - publish: $(Build.ArtifactStagingDirectory) # Publish the Docker image as an artifact
+            artifact: image # The name of the artifact
+            displayName: Publish Docker image
+  - stage: Test
+    displayName: Test stage
+    dependsOn: Build # The stage depends on the previous stage
+    condition: succeeded() # The stage runs only if the previous stage succeeded
+    jobs:
+      - job: Test_Job
+        displayName: Test job
+        pool:
+          vmImage: ubuntu-latest # The virtual machine image to run the job
+        steps:
+          - download: current # Download the artifacts from the current build
+            artifact: source # The name of the artifact to download
+            displayName: Download source code
+          - download: current # Download the artifacts from the current build
+            artifact: image # The name of the artifact to download
+            displayName: Download Docker image
+          - task: SnykSecurityScan@1 # Run the software component analysis on the code
+            inputs:
+              serviceConnection: $(snykServiceConnection) # The service connection to use
+              token: $(snykToken) # The token to use
+              projectType: 'maven' # The project type to use
+              projectPath: '$(Pipeline.Workspace)/source/pom.xml' # The project path to use
+              severityThreshold: 'high' # The severity threshold to use
+              monitorProject: true # Whether to monitor the project
+              failBuild: true # Whether to fail the build
+            displayName: Run software component analysis on code
+          - task: SnykSecurityScan@1 # Run the software component analysis on the image
+            inputs:
+              serviceConnection: $(snykServiceConnection) # The service connection to use
+              token: $(snykToken) # The token to use
+              projectType: 'docker' # The project type to use
+              projectPath: '$(dockerRegistry)/$(dockerImageName):$(Build.BuildId)' # The project path to use
+              severityThreshold: 'high' # The severity threshold to use
+              monitorProject: true # Whether to monitor the project
+              failBuild: true # Whether to fail the build
+            displayName: Run software component analysis on image
+  - stage: Scan
+    displayName: Scan stage
+    dependsOn: Test # The stage depends on the previous stage
+    condition: succeeded() # The stage runs only if the previous stage succeeded
+    jobs:
+      - job: Scan_Job
+        displayName: Scan job
+        pool:
+          vmImage: ubuntu-latest # The virtual machine image to run the job
+        steps:
+          - download: current # Download the artifacts from the current build
+            artifact: source # The name of the artifact to download
+            displayName: Download source code
+          - download: current # Download the artifacts from the current build
+            artifact: image # The name of the artifact to download
+            displayName: Download Docker image
+          - task: SnykSecurityScan@1 # Run the static analysis on the code
+            inputs:
+              serviceConnection: $(snykServiceConnection) # The service connection to use
+              token: $(snykToken) # The token to use
+              projectType: 'sast' # The project type to use
+              projectPath: '$(Pipeline.Workspace)/source' # The project path to use
+              severityThreshold: 'high' # The severity threshold to use
+              monitorProject: true # Whether to monitor the project
+              failBuild: true # Whether to fail the build
+            displayName: Run static analysis on code
+          - task: SnykSecurityScan@1 # Run the license compliance on the code
+            inputs:
+              serviceConnection: $(snykServiceConnection) # The service connection to use
+              token: $(snykToken) # The token to use
+              projectType: 'license' # The project type to use
+              projectPath: '$
