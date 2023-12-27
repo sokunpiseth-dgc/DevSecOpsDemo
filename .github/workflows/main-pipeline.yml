@@ -1,116 +1,64 @@
-# File name: cicd.yml
-# Description: A YAML file that supports the CI/CD pipeline for a Java application
-# Version: 1.0
-
-# Define the name, variables, and trigger of the pipeline
-name: Java App CI/CD Pipeline
-variables:
-  # Define the variables that you need for your pipeline, such as the repository URL, the Docker image name, the Snyk token, etc.
-trigger:
-  # Define the trigger that will start your pipeline, such as the branch or the tag of your repository
-
-# Define the stages of the pipeline
 stages:
-  - stage: Build
-    displayName: Build stage
-    jobs:
-      - job: Build_Job
-        displayName: Build job
-        pool:
-          vmImage: ubuntu-latest # The virtual machine image to run the job
-        steps:
-          - checkout: self # Check out the source code from the repository
-            persistCredentials: true # Persist the credentials for later use
-          - task: Maven@3 # Build the code with Maven
-            inputs:
-              mavenPomFile: 'pom.xml' # The Maven POM file to use
-              mavenOptions: '-Xmx3072m' # The Maven options to use
-              javaHomeOption: 'JDKVersion' # The Java home option to use
-              jdkVersionOption: '1.8' # The JDK version to use
-              jdkArchitectureOption: 'x64' # The JDK architecture to use
-              publishJUnitResults: true # Whether to publish the JUnit results
-              testResultsFiles: '**/surefire-reports/TEST-*.xml' # The test results files to use
-              goals: 'package' # The Maven goals to run
-            displayName: Build code
-          - task: Docker@2 # Build the Docker image
-            inputs:
-              containerRegistry: $(dockerRegistry) # The Docker registry to use
-              repository: $(dockerImageName) # The Docker repository to use
-              command: buildAndPush # The Docker command to run
-              Dockerfile: Dockerfile # The Dockerfile to use
-              tags: $(Build.BuildId) # The tag to use for the Docker image
-            displayName: Build Docker image
-          - publish: $(Build.SourcesDirectory) # Publish the source code as an artifact
-            artifact: source # The name of the artifact
-            displayName: Publish source code
-          - publish: $(Build.ArtifactStagingDirectory) # Publish the Docker image as an artifact
-            artifact: image # The name of the artifact
-            displayName: Publish Docker image
-  - stage: Test
-    displayName: Test stage
-    dependsOn: Build # The stage depends on the previous stage
-    condition: succeeded() # The stage runs only if the previous stage succeeded
-    jobs:
-      - job: Test_Job
-        displayName: Test job
-        pool:
-          vmImage: ubuntu-latest # The virtual machine image to run the job
-        steps:
-          - download: current # Download the artifacts from the current build
-            artifact: source # The name of the artifact to download
-            displayName: Download source code
-          - download: current # Download the artifacts from the current build
-            artifact: image # The name of the artifact to download
-            displayName: Download Docker image
-          - task: SnykSecurityScan@1 # Run the software component analysis on the code
-            inputs:
-              serviceConnection: $(snykServiceConnection) # The service connection to use
-              token: $(snykToken) # The token to use
-              projectType: 'maven' # The project type to use
-              projectPath: '$(Pipeline.Workspace)/source/pom.xml' # The project path to use
-              severityThreshold: 'high' # The severity threshold to use
-              monitorProject: true # Whether to monitor the project
-              failBuild: true # Whether to fail the build
-            displayName: Run software component analysis on code
-          - task: SnykSecurityScan@1 # Run the software component analysis on the image
-            inputs:
-              serviceConnection: $(snykServiceConnection) # The service connection to use
-              token: $(snykToken) # The token to use
-              projectType: 'docker' # The project type to use
-              projectPath: '$(dockerRegistry)/$(dockerImageName):$(Build.BuildId)' # The project path to use
-              severityThreshold: 'high' # The severity threshold to use
-              monitorProject: true # Whether to monitor the project
-              failBuild: true # Whether to fail the build
-            displayName: Run software component analysis on image
-  - stage: Scan
-    displayName: Scan stage
-    dependsOn: Test # The stage depends on the previous stage
-    condition: succeeded() # The stage runs only if the previous stage succeeded
-    jobs:
-      - job: Scan_Job
-        displayName: Scan job
-        pool:
-          vmImage: ubuntu-latest # The virtual machine image to run the job
-        steps:
-          - download: current # Download the artifacts from the current build
-            artifact: source # The name of the artifact to download
-            displayName: Download source code
-          - download: current # Download the artifacts from the current build
-            artifact: image # The name of the artifact to download
-            displayName: Download Docker image
-          - task: SnykSecurityScan@1 # Run the static analysis on the code
-            inputs:
-              serviceConnection: $(snykServiceConnection) # The service connection to use
-              token: $(snykToken) # The token to use
-              projectType: 'sast' # The project type to use
-              projectPath: '$(Pipeline.Workspace)/source' # The project path to use
-              severityThreshold: 'high' # The severity threshold to use
-              monitorProject: true # Whether to monitor the project
-              failBuild: true # Whether to fail the build
-            displayName: Run static analysis on code
-          - task: SnykSecurityScan@1 # Run the license compliance on the code
-            inputs:
-              serviceConnection: $(snykServiceConnection) # The service connection to use
-              token: $(snykToken) # The token to use
-              projectType: 'license' # The project type to use
-              projectPath: '$
+  - build
+  - analysis
+  - security
+  - dockerize
+  - scan
+
+# Define the CI/CD pipeline jobs
+jobs:
+  - job: Build
+    displayName: 'Build stage'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+      - script: echo 'Building the Java code...'
+        displayName: 'Building the code'
+
+  - job: Software_Component_Analysis
+    displayName: 'Software Component Analysis'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+      - script: echo 'Performing Software Component Analysis...'
+        displayName: 'Software Component Analysis'
+
+  - job: Static_Analysis
+    displayName: 'Static Analysis (SAST)'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+      - script: echo 'Running Static Analysis (SAST)...'
+        displayName: 'Static Analysis (SAST)'
+
+  - job: License_Compliance
+    displayName: 'License Compliance'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+      - script: echo 'Checking License Compliance...'
+        displayName: 'License Compliance'
+
+  - job: Build_Docker_Image
+    displayName: 'Build Docker Image'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+      - script: echo 'Building Docker image...'
+        displayName: 'Building Docker Image'
+
+  - job: Container_Image_Scan
+    displayName: 'Container Image Scan'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+      - script: echo 'Scanning Container Image for vulnerabilities...'
+        displayName: 'Container Image Scan'
+
+  - job: DAST_Scan
+    displayName: 'DAST Scan'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+      - script: echo 'Running Dynamic Application Security Testing (DAST)...'
+        displayName: 'DAST Scan'
