@@ -7,61 +7,56 @@ on:
   workflow_dispatch:
 
 # Define the stages of the pipeline
-stages:
-- build
-- test
-- scan
-- deploy
-
-# Build the code using Maven
-build:
-  stage: build
-  image: maven:latest
-  script:
-  - mvn package
-  artifacts:
-    paths:
-    - target/*.jar
-
-# Test the code using JUnit
-test:
-  stage: test
-  image: maven:latest
-  script:
-  - mvn test
-  artifacts:
-    paths:
-    - target/surefire-reports/*.xml
-
-# Scan the code using Veracode
-scan:
-  stage: scan
-  image: veracode/veracode-pipeline-scan:latest
-  script:
-  # Software Component Analysis
-  - veracode -vid $VERACODE_API_ID -vkey $VERACODE_API_KEY -f target/*.jar -action sca
-  # Static Analysis
-  - veracode -vid $VERACODE_API_ID -vkey $VERACODE_API_KEY -f target/*.jar -action static
-  # License Compliance
-  - veracode -vid $VERACODE_API_ID -vkey $VERACODE_API_KEY -f target/*.jar -action license
-  # DAST Scan
-  - veracode -vid $VERACODE_API_ID -vkey $VERACODE_API_KEY -f target/*.jar -action dast -url $APP_URL
-  artifacts:
-    paths:
-    - veracode-results/*.json
-
-# Deploy the code using Docker
-deploy:
-  stage: deploy
-  image: docker:latest
-  services:
-  - docker:dind
-  script:
-  # Build the Docker image
-  - docker build -t $DOCKER_IMAGE .
-  # Container image scan
-  - docker scan $DOCKER_IMAGE
-  # Push the Docker image to the registry
-  - docker push $DOCKER_IMAGE
-  # Deploy the Docker image to the server
-  - docker run -d -p 8080:8080 $DOCKER_IMAGE
+jobs:
+  # Build the code using Maven
+  build:
+    stage: build
+    image: maven:latest
+    script:
+    - mvn package
+    artifacts:
+      paths:
+      - target/*.jar
+  
+  # Test the code using JUnit
+  test:
+    stage: test
+    image: maven:latest
+    script:
+    - mvn test
+    artifacts:
+      paths:
+      - target/surefire-reports/*.xml
+  
+  # Scan the code using Veracode
+  scan:
+    stage: scan
+    image: veracode/veracode-pipeline-scan:latest
+    script:
+    # Software Component Analysis
+    - veracode -vid $VERACODE_API_ID -vkey $VERACODE_API_KEY -f target/*.jar -action sca
+    # Static Analysis
+    - veracode -vid $VERACODE_API_ID -vkey $VERACODE_API_KEY -f target/*.jar -action static
+    # License Compliance
+    - veracode -vid $VERACODE_API_ID -vkey $VERACODE_API_KEY -f target/*.jar -action license
+    # DAST Scan
+    - veracode -vid $VERACODE_API_ID -vkey $VERACODE_API_KEY -f target/*.jar -action dast -url $APP_URL
+    artifacts:
+      paths:
+      - veracode-results/*.json
+  
+  # Deploy the code using Docker
+  deploy:
+    stage: deploy
+    image: docker:latest
+    services:
+    - docker:dind
+    script:
+    # Build the Docker image
+    - docker build -t $DOCKER_IMAGE .
+    # Container image scan
+    - docker scan $DOCKER_IMAGE
+    # Push the Docker image to the registry
+    - docker push $DOCKER_IMAGE
+    # Deploy the Docker image to the server
+    - docker run -d -p 8080:8080 $DOCKER_IMAGE
